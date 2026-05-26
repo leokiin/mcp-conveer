@@ -1,0 +1,54 @@
+teamlead:
+  # model: claude-opus-4-7  # Anthropic — swap back if you have ANTHROPIC_API_KEY
+  model: deepseek/deepseek-v4-flash
+  role: "Coordinates feature implementation, writes final summary"
+  mode: sequential
+
+workflow:
+  - step: plan
+    agent: planner
+
+  - step: design-api
+    agent: api-designer
+    depends_on: [plan]
+
+  - step: implement
+    loop:
+      max_iterations: 4
+      until: reviewer.approved == true
+      steps:
+        - agent: implementer
+          depends_on: [plan, design-api]
+
+        - agent: test-writer
+          depends_on: [implementer]
+
+        - agent: reviewer
+          depends_on: [implementer, test-writer]
+
+agents:
+  - name: planner
+    # model: claude-opus-4-7  # Anthropic
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/planner.md
+
+  - name: api-designer
+    # model: claude-sonnet-4-6  # Anthropic
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/api-designer.md
+
+  - name: implementer
+    # model: claude-sonnet-4-6  # Anthropic
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/implementer.md
+
+  - name: test-writer
+    # model: claude-haiku-4-5  # Anthropic
+    # model: ollama/llama3     # local
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/test-writer.md
+
+  - name: reviewer
+    # model: claude-opus-4-7  # Anthropic
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/reviewer.md

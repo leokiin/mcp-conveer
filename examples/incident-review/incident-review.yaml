@@ -1,0 +1,47 @@
+teamlead:
+  # model: claude-opus-4-7  # Anthropic — swap back if you have ANTHROPIC_API_KEY
+  model: deepseek/deepseek-v4-flash
+  role_file: ./agents/teamlead.md
+  mode: sequential
+
+workflow:
+  - step: read-task
+    agent: task-reader
+
+  - step: build-callgraph
+    agent: callgraph-builder
+    depends_on: [read-task]
+
+  - step: resolve
+    depends_on: [build-callgraph]
+    loop:
+      max_iterations: 5
+      until: incident-finder.found == true
+      steps:
+        - agent: incident-finder
+          depends_on: [build-callgraph, read-task]
+        - agent: problem-solver
+          depends_on: [incident-finder]
+
+agents:
+  - name: task-reader
+    # model: claude-haiku-4-5  # Anthropic
+    # model: ollama/llama3     # local
+    model: deepseek/deepseek-v4-flash
+    role: "Reads the incident description. Extracts: what we are looking for, expected behavior, key terms."
+
+  - name: callgraph-builder
+    # model: claude-haiku-4-5  # Anthropic
+    # model: ollama/llama3     # local — code never leaves machine
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/callgraph-builder.md
+
+  - name: incident-finder
+    # model: claude-sonnet-4-6  # Anthropic
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/incident-finder.md
+
+  - name: problem-solver
+    # model: claude-sonnet-4-6  # Anthropic
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/problem-solver.md

@@ -1,0 +1,58 @@
+workflow:
+  - step: parse-task
+    agent: task-parser
+
+  - step: read-file
+    agent: file-reader
+    depends_on: [parse-task]
+
+  - step: extract-func
+    agent: func-extractor
+    depends_on: [parse-task, read-file]
+
+  - step: extract-libs
+    agent: lib-extractor
+    depends_on: [extract-func]
+
+  - step: fetch-docs
+    agent: context7-fetcher
+    depends_on: [extract-libs]
+
+  - step: describe
+    agent: func-describer
+    depends_on: [extract-func, extract-libs, fetch-docs]
+
+agents:
+  - name: task-parser
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/task-parser.md
+
+  - name: file-reader
+    type: mcp-client
+    command: "npx -y @modelcontextprotocol/server-filesystem /home/dinar_magadeev"
+    tool: read_file
+    input_key: path
+    input_step: parse-task
+    input_field: file
+
+  - name: func-extractor
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/func-extractor.md
+
+  - name: lib-extractor
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/lib-extractor.md
+
+  - name: context7-fetcher
+    type: mcp-client
+    command: "npx -y @upstash/context7-mcp@latest"
+    tool: resolve-library-id
+    input_key: libraryName
+    input_step: extract-libs
+    input_field: library
+    extra_args:
+      query: "API documentation, function signatures, and usage examples"
+
+  - name: func-describer
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/func-describer.md
