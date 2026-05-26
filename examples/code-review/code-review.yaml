@@ -18,9 +18,13 @@ workflow:
     agent: context7-fetcher
     depends_on: [extract-libs]
 
+  - step: summarize-context
+    agent: summarizer
+    depends_on: [extract-func, extract-libs, fetch-docs]
+
   - step: describe
     agent: func-describer
-    depends_on: [extract-func, extract-libs, fetch-docs]
+    depends_on: [summarize-context]
 
 agents:
   - name: task-parser
@@ -52,6 +56,10 @@ agents:
     input_field: library
     extra_args:
       query: "API documentation, function signatures, and usage examples"
+
+  - name: summarizer
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/summarizer.md
 
   - name: func-describer
     model: deepseek/deepseek-v4-flash

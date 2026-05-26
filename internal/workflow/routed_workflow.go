@@ -22,9 +22,9 @@ type RoutedInput struct {
 
 // RoutedResult holds the teamlead's final synthesis.
 type RoutedResult struct {
-	SelectedAgents []string          `json:"selected_agents"`
-	AgentOutputs   map[string]string `json:"agent_outputs"`
-	Summary        string            `json:"summary"`
+	SelectedAgents []string                   `json:"selected_agents"`
+	AgentOutputs   map[string]json.RawMessage `json:"agent_outputs"`
+	Summary        string                     `json:"summary"`
 }
 
 const routingPromptTemplate = `You are a teamlead orchestrating a team of specialized agents.
@@ -101,14 +101,15 @@ func RoutedWorkflow(ctx workflow.Context, input RoutedInput) (RoutedResult, erro
 		})
 	}
 
-	agentOutputs := make(map[string]string, len(selected))
+	agentOutputs := make(map[string]json.RawMessage, len(selected))
 	for range selected {
 		var nr namedResult
 		ch.Receive(ctx, &nr)
 		if nr.err != "" {
-			agentOutputs[nr.name] = "error: " + nr.err
+			errJSON, _ := json.Marshal(map[string]string{"error": nr.err})
+			agentOutputs[nr.name] = errJSON
 		} else {
-			agentOutputs[nr.name] = string(nr.out)
+			agentOutputs[nr.name] = nr.out
 		}
 	}
 
@@ -122,7 +123,7 @@ func RoutedWorkflow(ctx workflow.Context, input RoutedInput) (RoutedResult, erro
 
 	synthParts := []string{"Results from agents:", ""}
 	for _, name := range agentNames {
-		synthParts = append(synthParts, fmt.Sprintf("[%s]: %s", name, agentOutputs[name]))
+		synthParts = append(synthParts, fmt.Sprintf("[%s]: %s", name, string(agentOutputs[name])))
 	}
 	synthParts = append(synthParts, "", "Please provide a concise final summary.")
 

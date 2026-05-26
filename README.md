@@ -216,6 +216,42 @@ Each step with `depends_on` automatically receives its dependency outputs append
 
 Raw conversation history never accumulates. Each agent's context window stays clean.
 
+### Context grows too large? Add a summarizer step in YAML.
+
+When a step has many upstream dependencies, its context can grow large. The fix is one new step in the config — no code changes:
+
+**Before** — `describe` receives three raw outputs, including verbose Context7 docs:
+
+```yaml
+  - step: describe
+    agent: func-describer
+    depends_on: [extract-func, extract-libs, fetch-docs]
+```
+
+**After** — a cheap summarizer compresses all three into ~500 tokens, `describe` gets a clean input:
+
+```yaml
+  - step: summarize-context
+    agent: summarizer
+    depends_on: [extract-func, extract-libs, fetch-docs]
+
+  - step: describe
+    agent: func-describer
+    depends_on: [summarize-context]
+```
+
+```yaml
+agents:
+  - name: summarizer
+    model: deepseek/deepseek-v4-flash   # cheap model — compression is a simple task
+    role: |
+      Compress the inputs into a compact JSON object. Drop raw data.
+      Keep: key findings, relevant code, library name, 2-3 sentence doc summary.
+      Target: under 500 tokens.
+```
+
+The same pattern applies anywhere context accumulates: after a fan-out, before an expensive model, at the entry point of a loop.
+
 ---
 
 ## Supported Models

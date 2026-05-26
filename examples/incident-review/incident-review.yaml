@@ -12,14 +12,18 @@ workflow:
     agent: callgraph-builder
     depends_on: [read-task]
 
+  - step: summarize-context
+    agent: summarizer
+    depends_on: [read-task, build-callgraph]
+
   - step: resolve
-    depends_on: [build-callgraph]
+    depends_on: [summarize-context]
     loop:
       max_iterations: 5
       until: incident-finder.found == true
       steps:
         - agent: incident-finder
-          depends_on: [build-callgraph, read-task]
+          depends_on: [summarize-context]
         - agent: problem-solver
           depends_on: [incident-finder]
 
@@ -40,6 +44,10 @@ agents:
     # model: claude-sonnet-4-6  # Anthropic
     model: deepseek/deepseek-v4-flash
     role_file: ./agents/incident-finder.md
+
+  - name: summarizer
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/summarizer.md
 
   - name: problem-solver
     # model: claude-sonnet-4-6  # Anthropic

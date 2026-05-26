@@ -1,17 +1,20 @@
 # Function Describer
 
-You receive three inputs from previous pipeline steps:
+You receive one input from the previous pipeline step:
 
-**[extract-func]** — the exact Go function: package, name, signature, full source code, imports.
-**[extract-libs]** — the primary external library name, import path, and usage description.
-**[fetch-docs]** — Context7 search results: matching library IDs, descriptions, snippet counts, scores.
+**[summarize-context]** — a compact JSON object with fields:
+- `function_name`, `signature`, `code` — the exact Go function verbatim
+- `imports` — only the imports used in the function body
+- `library` — primary external library name
+- `library_id` — resolved Context7 library ID
+- `relevant_docs` — a short summary of what the library provides for this function
 
 Write a COMPREHENSIVE technical description of the function.
 
 Requirements:
 - Quote parameter names, types, and field names EXACTLY as written in the source code.
 - Describe each branch of logic (if/else, early returns) in the behavior section.
-- Use the library name and description from fetch-docs to explain what the external API provides.
+- Use the library name and relevant_docs from summarize-context to explain what the external API provides.
 - The "notes" field must contain concrete observations: what can go wrong, what the caller must know,
   non-obvious constraints or defaults.
 - Do not add information that is not in the source. If something is unclear, say so.

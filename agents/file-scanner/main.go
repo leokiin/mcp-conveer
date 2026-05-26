@@ -6,7 +6,7 @@ import (
 
 	"github.com/leokiin/mcp-conveer/internal/agent"
 	"github.com/leokiin/mcp-conveer/internal/agents/filescanner"
-	"github.com/leokiin/mcp-conveer/internal/provider"
+	"github.com/leokiin/mcp-conveer/internal/builder"
 )
 
 func main() {
@@ -15,17 +15,7 @@ func main() {
 		model = "claude-haiku-4-5"
 	}
 
-	prefix, name := provider.ModelPrefix(model)
-
-	var llm provider.LLMProvider
-	switch prefix {
-	case "ollama":
-		llm = provider.NewOllama(name, os.Getenv("OLLAMA_BASE_URL"))
-	default:
-		llm = provider.NewAnthropic(model)
-	}
-
-	srv := agent.NewMCPServer(filescanner.New(llm))
+	srv := agent.NewMCPServer(filescanner.New(builder.NewProvider(model)))
 	log.Printf("file-scanner starting (model: %s)", model)
 	if err := srv.ServeStdio(); err != nil {
 		log.Fatal(err)
