@@ -1,0 +1,140 @@
+teamlead:
+  model: deepseek/deepseek-v4-pro
+  mode: sequential
+
+workflow:
+  # Layer 1: parse task, extract project_dir and task metadata
+  - step: parse-task
+    agent: task-parser
+
+  # Layer 2: parallel filesystem reads
+  - step: read-claude-md
+    agent: claude-reader
+    depends_on: [parse-task]
+
+  - step: list-structure
+    agent: structure-lister
+    depends_on: [parse-task]
+
+  - step: deep-scan
+    agent: deep-scanner
+    depends_on: [parse-task]
+
+  - step: list-plans
+    agent: plans-lister
+    depends_on: [parse-task]
+
+  # Layer 3: pick relevant files, then read them
+  - step: pick-files
+    agent: file-picker
+    depends_on: [parse-task, deep-scan]
+
+  - step: read-sources
+    agent: source-reader
+    depends_on: [pick-files]
+
+  # Layer 4: parallel analysis of gathered data
+  - step: analyze-structure
+    agent: structure-analyst
+    depends_on: [parse-task, read-claude-md, list-structure, deep-scan, read-sources]
+
+  - step: check-plans
+    agent: plan-checker
+    depends_on: [parse-task, list-plans]
+
+  # Layer 4: draft specification
+  - step: draft-spec
+    agent: spec-drafter
+    depends_on: [parse-task, analyze-structure, check-plans]
+
+  # Layer 5: draft implementation plan
+  - step: draft-plan
+    agent: plan-drafter
+    depends_on: [parse-task, analyze-structure, draft-spec]
+
+  # Layer 6: write files to docs/plan/{track_id}/ in the project directory
+  - step: write-spec
+    agent: spec-file-writer
+    depends_on: [parse-task, draft-spec]
+
+  - step: write-plan
+    agent: plan-file-writer
+    depends_on: [parse-task, draft-plan]
+
+agents:
+  - name: task-parser
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/task-parser.md
+
+  # Read CLAUDE.md from the project directory; returns {"content":""} if missing
+  - name: claude-reader
+    type: file-reader
+    path_step: parse-task
+    path_field: claude_md_path
+    read_mode: read_file
+
+  # List top-level source files to understand project structure
+  - name: structure-lister
+    type: mcp-client
+    command: "npx -y @modelcontextprotocol/server-filesystem /"
+    tool: list_directory
+    input_key: path
+    input_step: parse-task
+    input_field: project_dir
+
+  # Recursively find all source files inside src/ only (avoids vendor, .git, var)
+  - name: deep-scanner
+    type: mcp-client
+    command: "npx -y @modelcontextprotocol/server-filesystem /"
+    tool: search_files
+    input_key: path
+    input_step: parse-task
+    input_field: src_dir
+    extra_args:
+      pattern: "**"
+
+  # List existing plans (docs/plan/); returns {"entries":[]} if directory missing
+  - name: plans-lister
+    type: file-reader
+    path_step: parse-task
+    path_field: plans_dir
+    read_mode: list_directory
+
+  - name: file-picker
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/file-picker.md
+
+  - name: source-reader
+    type: multi-file-reader
+    files_step: pick-files
+    files_field: files
+    max_files: 10
+    max_lines: 200
+
+  - name: structure-analyst
+    model: deepseek/deepseek-v4-pro
+    role_file: ./agents/structure-analyst.md
+
+  - name: plan-checker
+    model: deepseek/deepseek-v4-flash
+    role_file: ./agents/plan-checker.md
+
+  - name: spec-drafter
+    model: deepseek/deepseek-v4-pro
+    role_file: ./agents/spec-drafter.md
+
+  - name: plan-drafter
+    model: deepseek/deepseek-v4-pro
+    role_file: ./agents/plan-drafter.md
+
+  - name: spec-file-writer
+    type: file-writer
+    content_step: draft-spec
+    content_field: spec_content
+    filename: spec.md
+
+  - name: plan-file-writer
+    type: file-writer
+    content_step: draft-plan
+    content_field: response
+    filename: plan.md

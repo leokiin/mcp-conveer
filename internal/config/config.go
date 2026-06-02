@@ -62,6 +62,27 @@ type AgentDef struct {
 	// main input_key argument. Useful for tools that require multiple required parameters
 	// (e.g. Context7 resolve-library-id needs both "libraryName" and "query").
 	ExtraArgs map[string]string `yaml:"extra_args"`
+
+	// file-writer fields: step whose result contains the content, field name within
+	// that result, and the output filename under docs/plan/{track_id}/.
+	ContentStep  string `yaml:"content_step"`
+	ContentField string `yaml:"content_field"`
+	Filename     string `yaml:"filename"`
+
+	// file-reader fields: step and field holding the path, plus read mode.
+	// mode: "read_file" returns {"content":"..."}, "list_directory" returns {"entries":[...]}.
+	// A missing path returns empty content/entries instead of an error.
+	PathStep  string `yaml:"path_step"`
+	PathField string `yaml:"path_field"`
+	ReadMode  string `yaml:"read_mode"`
+
+	// multi-file-reader fields: step and field holding []string of absolute paths.
+	// MaxFiles caps the number of files read (default 10).
+	// MaxLines caps lines per file (default 200); truncated files are marked truncated:true.
+	FilesStep  string `yaml:"files_step"`
+	FilesField string `yaml:"files_field"`
+	MaxFiles   int    `yaml:"max_files"`
+	MaxLines   int    `yaml:"max_lines"`
 }
 
 // Load reads and parses a YAML config file.

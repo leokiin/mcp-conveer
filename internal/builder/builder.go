@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 
 	"github.com/leokiin/mcp-conveer/internal/agent"
+	"github.com/leokiin/mcp-conveer/internal/agents/filereader"
+	"github.com/leokiin/mcp-conveer/internal/agents/filewriter"
 	"github.com/leokiin/mcp-conveer/internal/agents/generic"
 	"github.com/leokiin/mcp-conveer/internal/agents/mcpclient"
+	"github.com/leokiin/mcp-conveer/internal/agents/multireader"
 	"github.com/leokiin/mcp-conveer/internal/config"
 	"github.com/leokiin/mcp-conveer/internal/provider"
 )
@@ -31,6 +34,15 @@ func NewProvider(model string) provider.LLMProvider {
 func NewAgent(def config.AgentDef, cfgDir string) (agent.Agent, error) {
 	if def.Type == "mcp-client" {
 		return mcpclient.New(def.Name, def.Command, def.Tool, def.InputKey, def.ExtraArgs), nil
+	}
+	if def.Type == "file-writer" {
+		return filewriter.New(def.Name, def.ContentStep, def.ContentField, def.Filename), nil
+	}
+	if def.Type == "file-reader" {
+		return filereader.New(def.Name, def.PathStep, def.PathField, def.ReadMode), nil
+	}
+	if def.Type == "multi-file-reader" {
+		return multireader.New(def.Name, def.FilesStep, def.FilesField, def.MaxFiles, def.MaxLines), nil
 	}
 	role, err := ResolveRole(def.Role, def.RoleFile, cfgDir)
 	if err != nil {

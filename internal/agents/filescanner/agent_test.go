@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/leokiin/mcp-conveer/internal/agents/filescanner"
+	"github.com/leokiin/mcp-conveer/internal/provider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,8 +18,8 @@ type fakeProvider struct {
 	err      error
 }
 
-func (f *fakeProvider) Complete(_ context.Context, _, _ string) (string, error) {
-	return f.response, f.err
+func (f *fakeProvider) Complete(_ context.Context, _, _ string) (string, provider.Usage, error) {
+	return f.response, provider.Usage{}, f.err
 }
 
 const validScanJSON = `{

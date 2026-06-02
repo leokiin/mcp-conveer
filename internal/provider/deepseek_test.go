@@ -46,7 +46,7 @@ func TestDeepSeekProvider_Complete(t *testing.T) {
 	defer srv.Close()
 
 	p := provider.NewDeepSeekWithURL("deepseek-v4-flash", "test-key", srv.URL)
-	got, err := p.Complete(context.Background(), "you are a bot", "hello")
+	got, _, err := p.Complete(context.Background(), "you are a bot", "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestDeepSeekProvider_EmptyChoices(t *testing.T) {
 	defer srv.Close()
 
 	p := provider.NewDeepSeekWithURL("deepseek-v4-flash", "test-key", srv.URL)
-	_, err := p.Complete(context.Background(), "", "hello")
+	_, _, err := p.Complete(context.Background(), "", "hello")
 	if err == nil {
 		t.Fatal("expected error for empty choices")
 	}
@@ -79,7 +79,7 @@ func TestDoPost_NonOKStatus(t *testing.T) {
 	defer srv.Close()
 
 	p := provider.NewOllama("llama3", srv.URL)
-	_, err := p.Complete(context.Background(), "", "hello")
+	_, _, err := p.Complete(context.Background(), "", "hello")
 	if err == nil {
 		t.Fatal("expected error")
 	}

@@ -39,10 +39,12 @@ type ollamaChatRequest struct {
 }
 
 type ollamaChatResponse struct {
-	Message ollamaMessage `json:"message"`
+	Message         ollamaMessage `json:"message"`
+	PromptEvalCount int           `json:"prompt_eval_count"`
+	EvalCount       int           `json:"eval_count"`
 }
 
-func (p *OllamaProvider) Complete(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+func (p *OllamaProvider) Complete(ctx context.Context, systemPrompt, userPrompt string) (string, Usage, error) {
 	messages := []ollamaMessage{}
 	if systemPrompt != "" {
 		messages = append(messages, ollamaMessage{Role: "system", Content: systemPrompt})
@@ -54,7 +56,11 @@ func (p *OllamaProvider) Complete(ctx context.Context, systemPrompt, userPrompt 
 		ollamaChatRequest{Model: p.model, Messages: messages, Stream: false},
 		&result,
 	); err != nil {
-		return "", fmt.Errorf("ollama: %w", err)
+		return "", Usage{}, fmt.Errorf("ollama: %w", err)
 	}
-	return result.Message.Content, nil
+	usage := Usage{
+		InputTokens:  result.PromptEvalCount,
+		OutputTokens: result.EvalCount,
+	}
+	return result.Message.Content, usage, nil
 }

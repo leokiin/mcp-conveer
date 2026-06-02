@@ -60,7 +60,7 @@ func (a *Agent) Handle(ctx context.Context, task string) (json.RawMessage, error
 
 	userPrompt := fmt.Sprintf("File: %s\n\nContent:\n%s", clean, string(content))
 
-	raw, err := a.llm.Complete(ctx, systemPrompt, userPrompt)
+	raw, _, err := a.llm.Complete(ctx, systemPrompt, userPrompt)
 	if err != nil {
 		return nil, fmt.Errorf("llm: %w", err)
 	}

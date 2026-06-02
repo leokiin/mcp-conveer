@@ -46,9 +46,13 @@ type deepSeekResponse struct {
 	Choices []struct {
 		Message deepSeekMessage `json:"message"`
 	} `json:"choices"`
+	Usage struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+	} `json:"usage"`
 }
 
-func (p *DeepSeekProvider) Complete(ctx context.Context, systemPrompt, userPrompt string) (string, error) {
+func (p *DeepSeekProvider) Complete(ctx context.Context, systemPrompt, userPrompt string) (string, Usage, error) {
 	messages := []deepSeekMessage{}
 	if systemPrompt != "" {
 		messages = append(messages, deepSeekMessage{Role: "system", Content: systemPrompt})
@@ -61,10 +65,14 @@ func (p *DeepSeekProvider) Complete(ctx context.Context, systemPrompt, userPromp
 		deepSeekRequest{Model: p.model, Messages: messages},
 		&result,
 	); err != nil {
-		return "", fmt.Errorf("deepseek: %w", err)
+		return "", Usage{}, fmt.Errorf("deepseek: %w", err)
 	}
 	if len(result.Choices) == 0 {
-		return "", fmt.Errorf("deepseek: empty response")
+		return "", Usage{}, fmt.Errorf("deepseek: empty response")
 	}
-	return result.Choices[0].Message.Content, nil
+	usage := Usage{
+		InputTokens:  result.Usage.PromptTokens,
+		OutputTokens: result.Usage.CompletionTokens,
+	}
+	return result.Choices[0].Message.Content, usage, nil
 }

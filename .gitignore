@@ -1,6 +1,7 @@
 # Binaries
 mcp-conveer
 worker
+agent
 /bin/
 
 # Build output

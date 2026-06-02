@@ -51,7 +51,7 @@ func TestOllamaProvider_Complete(t *testing.T) {
 	defer srv.Close()
 
 	p := provider.NewOllama("llama3", srv.URL)
-	got, err := p.Complete(context.Background(), "you are a bot", "hello")
+	got, _, err := p.Complete(context.Background(), "you are a bot", "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestOllamaProvider_NoSystemPrompt(t *testing.T) {
 	defer srv.Close()
 
 	p := provider.NewOllama("llama3", srv.URL)
-	_, err := p.Complete(context.Background(), "", "hello")
+	_, _, err := p.Complete(context.Background(), "", "hello")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestDoPost_InvalidJSONResponse(t *testing.T) {
 	defer srv.Close()
 
 	p := provider.NewOllama("llama3", srv.URL)
-	_, err := p.Complete(context.Background(), "", "hello")
+	_, _, err := p.Complete(context.Background(), "", "hello")
 	if err == nil {
 		t.Fatal("expected error for invalid JSON response")
 	}
